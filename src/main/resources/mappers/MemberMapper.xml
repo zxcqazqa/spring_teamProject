@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jafa.repository.MemberRepository">
+<!-- 회원정보관리 페이지 (관리자) -->
+	<select id="getTotalCount" resultType="int">
+		select count(*) from mem_tbl
+		<where>
+			<include refid="condition"/>
+		</where>
+	</select>
+	<sql id="condition">
+		<trim prefix="and">
+			<choose>
+				<when test="type=='N'.toString()">
+					name like '%'||#{keyword}||'%'
+				</when>
+				<when test="type=='G'.toString()">
+					gender like '%'||#{keyword}||'%'
+				</when>
+				<when test="type=='ID'.toString()">
+					id like '%'||#{keyword}||'%'
+				</when>			
+			</choose>
+		</trim>	
+	</sql>
+	<select id="getMemberInfo" resultType="com.jafa.domain.MemberVO">
+		<![CDATA[
+		select 
+		    rn, mno, id, name, age, gender, email, profile
+		from
+		(
+		    select 
+		        /*+ index_desc(mem_tbl primary_mno) */
+		       rownum as rn, mno, id, name, age, gender, email, profile
+		    from 
+		        mem_tbl
+		    where rownum <= #{maxRow}
+		]]>
+			<include refid="condition"/>
+		<![CDATA[ 
+		) 
+		where rn > #{minRow}
+		]]> 
+	</select>
+
+
+	<select id="registerCheck" resultType="com.jafa.domain.MemberVO">
+		select * from mem_tbl where id = #{id}
+	</select>
+	
+	<!-- 원본 
+	<insert id="register" parameterType="com.jafa.domain.MemberVO">
+		insert into
+		mem_tbl(memIdx,memID,memPassword,memName,memAge,memGender,memEmail,memProfile)
+		values(${memIdx},#{memID},#{memPassword},#{memName},#{memAge},#{memGender},#{memEmail},#{memProfile})
+	</insert>
+	 -->
+	 
+	 <!-- 
+	 <insert id="register" parameterType="com.jafa.domain.MemberVO">
+		insert into
+		mem_tbl(mno, id, pwd, name, age, gender, email, profile)
+		values(mno.NEXTVAL, #{id}, #{pwd}, #{name}, #{age}, #{gender}, #{email}, #{profile})
+	</insert>
+	 -->
+	 
+	 <insert id="register" parameterType="com.jafa.domain.MemberVO">
+		INSERT INTO mem_tbl
+		(mno,id,pwd,name,age,gender,email,profile)
+		VALUES(mno.NEXTVAL,#{id},#{pwd}, #{name},#{age},#{gender},#{email}, #{profile})
+	</insert>
+	 
+	<select id="login" parameterType="com.jafa.domain.MemberVO" resultType="com.jafa.domain.MemberVO">
+		select * from mem_tbl 
+		where id=#{id} and pwd=#{pwd}
+	</select>
+	 
+	<update id="update" parameterType="com.jafa.domain.MemberVO">
+		update mem_tbl set pwd=#{pwd}, name=#{name}, 
+		age=#{age},gender=#{gender},email=#{email} 
+		where id=#{id}
+	</update>
+	 
+	<select id="getMember" resultType="com.jafa.domain.MemberVO">
+		select * from mem_tbl where id=#{id}
+	</select>
+	 
+	<update id="profileUpdate" parameterType="com.jafa.domain.MemberVO">
+		update mem_tbl set profile=#{profile,jdbcType=VARCHAR} where id=#{id}
+	</update>
+
+
+</mapper>

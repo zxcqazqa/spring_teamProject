@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jafa.repository.BoardRepository">
+
+  <!-- 글상세보기 -->
+  <select id="detail" resultType="boardVO">
+    select * from board where bno=#{bno}
+  </select>
+  
+    <!-- 글삭제하기 -->
+  <delete id="remove">
+  	delete from board where bno=#{bno}
+  </delete>
+
+  <!-- 글쓰기 처리 (파일업로드 포함) -->
+ <insert id="insertBoard" useGeneratedKeys="true" keyColumn="bno" keyProperty="bno">
+	  	insert into board(bno,tid,title,content,writer,imageFileName,fileType)
+	  	values(bno_seq.nextval,#{tid},#{title},#{content},#{writer},
+	  	#{imageFileName, jdbcType=VARCHAR},#{fileType, jdbcType=VARCHAR})
+ </insert>
+ 
+ <!-- 글수정 이미지 있는거 없는거 -->
+ 	<update id="modify">
+		update board
+		set 
+			title = #{title},
+			content = #{content},
+			fileType = #{fileType,jdbcType=VARCHAR}, 
+			imageFileName = #{imageFileName, jdbcType=VARCHAR}
+		where bno = #{bno}
+	</update>
+	
+	<update id="modifyOnlyContent">
+	update board
+		set 
+			title = #{title},
+			content = #{content}
+		where bno = #{bno}
+	</update>
+ 
+ 
+ 
+  <!--게시판 목록 검색, 페이징, 카테고리 -->
+	<sql id="condition">
+		<trim prefix="and">
+			<choose>
+				<when test="type=='T'.toString()">
+					title like '%'||#{keyword}||'%'
+				</when>
+				<when test="type=='C'.toString()">
+					content like '%'||#{keyword}||'%'
+				</when>
+				<when test="type=='W'.toString()">
+					writer like '%'||#{keyword}||'%'
+				</when>			
+			</choose>
+		</trim>
+		<if test="tid!=null and tid!=''">
+			and tid = #{tid}
+		</if>		
+	</sql>
+  
+	<select id="getTotalCount" resultType="int">
+		select count(*) from board
+		<where>
+			<include refid="condition"/>
+		</where>
+	</select>
+	
+	<select id="list" resultType="boardVO">
+		<![CDATA[
+		select 
+		    rn, bno, tid, title, content, writer, writeDate
+		from
+		(
+		    select 
+		        /*+ index_desc(board primary_bno) */
+		        rownum as rn, bno, tid, title, content, writer, writeDate
+		    from 
+		        board
+		    where rownum <= #{maxRow}
+		]]>
+			<include refid="condition"/>
+		<![CDATA[ 
+		) 
+		where rn > #{minRow}
+		]]> 
+	</select>
+	
+  <!-- 메인 미리보기글(공지) 3개만 -->
+	<select id="mainNotice" resultType="boardVO">
+		<![CDATA[
+		select bno, tid, title, content, writer, writeDate
+		from board where tid='notice' and ROWNUM < 4 order by bno desc
+		]]>
+	</select>
+  	<select id="mainReview" resultType="boardVO">
+		<![CDATA[
+		select bno, tid, title, content, writer, writeDate
+		from board where tid='review' and ROWNUM < 4 order by bno desc
+		]]>
+	</select>
+	<select id="mainEtc" resultType="boardVO">
+		<![CDATA[
+		select bno, tid, title, content, writer, writeDate
+		from board where tid='etc' and ROWNUM < 4 order by bno desc
+		]]>
+	</select>
+</mapper>

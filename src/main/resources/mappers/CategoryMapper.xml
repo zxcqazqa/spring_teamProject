@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jafa.repository.CategoryRepository">
+
+	<!-- 북 카테 목록 -->
+	<select id="getCateList" resultType="bookCategory">
+		select * from book_category
+	</select>
+	
+	<!-- 북 서브카테 목록 -->
+	<select id="getSubCateList" resultType="bookSubCategory">
+		select * from book_subCategory
+	</select>
+	
+	<!-- 카테고리 추가 -->
+	<insert id="saveCate">
+		insert into book_category(cate_id,cate_name) values(#{cate_id},#{cate_name})
+	</insert>
+	
+	<!-- 서브 카테고리 추가 -->
+	<insert id="saveSubCate">
+		insert into book_subCategory(cate_id, subCate_id, subCate_name) values(#{cate_id}, #{subCate_id}, #{subCate_name})
+	</insert>
+	
+	<!-- 카테고리 삭제 -->
+	<delete id="delCate">
+		delete from book_category where cate_id=#{id}
+	</delete>
+	
+	<!-- 서브 카테고리 삭제 -->
+	<delete id="delSubCate">
+		delete from book_subCategory where subCate_id=#{id}
+	</delete>
+
+</mapper>

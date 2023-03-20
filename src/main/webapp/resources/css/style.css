@@ -1,0 +1,50 @@
+
+@charset "UTF-8";
+
+.bookMenu li{list-style: none;}
+.memberInfo li{list-style: none;}
+.p-2 li {list-style: none;}
+
+.memberInfo ul{
+	margin:0;
+	position: relative;top:15px; 
+}
+
+.memberInfo li a {
+	line-height: 50px;
+}
+
+.adminMenu {
+	float: left;   /* 왼쪽 정렬되어 오른쪽에 다음 글자가 붙게 된다. */
+	width : 200px;
+	margin-left: 50px;  /* 왼쪽 여백  */
+	margin-right: 50px;  /* 오른쪽 여백  */
+}
+
+.adminMenu h3{
+	background-color: black;  /* 배경색 */ 
+	margin-bottom: 0px;  /* 아래쪽 테두리 없앰  */
+	color: white;  /* 글자색  */
+}
+
+.adminMenu li {
+	border: 1px solid black;  /* 테두리  */
+	border-top: none;  /* 위쪽 테두리 없앰  */
+}
+
+.dropdown:hover .dropdown-menu {
+	display: block;  /*전후 줄바꿈이 들어가 다른 엘리먼트들을 다른 줄로 밀어내고 혼자 한 줄을 차지합니다.*/ 
+}
+
+#bookImgArea {
+	width: 185px;
+	height: 225px;
+	border: 1px solid #ececec;
+}
+
+.bookList2 ul li {
+	width: 185px;
+	height: 325px;
+	margin : 10px;
+	display: inline-block;
+}

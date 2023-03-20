@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jafa.repository.BookRepository">
+
+	<!-- 추가하거나 수정한거 -->
+	
+	<!-- 카테맵 -->
+	<resultMap type="bookCategory" id="cateMap">
+		<result property="cate_id" column="cate_id" />
+		<result property="cate_name" column="cate_name" />
+	</resultMap>
+	<!-- 서브카테맵 -->
+	<resultMap type="bookSubCategory" id="sub_cateMap">
+		<result property="cate_id" column="cate_id" />
+		<result property="subCate_id" column="subCate_id" />
+		<result property="subCate_name" column="subCate_name" />
+	</resultMap>
+	
+	<resultMap type="bookVO" id="bookMap">
+		<result property="bookNo" column="bookNo"/>
+		<result property="bookName" column="bookName"/>
+		<result property="author" column="author"/>
+		<result property="publisher" column="publisher"/>
+		<result property="bookImage" column="bookImage"/>
+		<result property="price" column="price"/>
+		<result property="regDate" column="regDate"/>
+		<collection property="bookCategory" resultMap="cateMap"/>
+		<collection property="bookSubCategory" resultMap="sub_cateMap"/>
+	</resultMap>
+	
+	<sql id="condition2">
+		<trim prefix="and">
+			<choose>
+				<when test="type=='B'.toString()">
+					b.bookName like '%'||#{keyword}||'%'
+				</when>
+				<when test="type=='A'.toString()">
+					b.author like '%'||#{keyword}||'%'
+				</when>
+				<when test="type=='P'.toString()">
+					b.publisher like '%'||#{keyword}||'%'
+				</when>
+			</choose>
+		</trim>
+		<if test="cate_id!=null and cate_id!=''">
+			and c.cate_id = #{cate_id}
+			<if test="subCate_id!=null and subCate_id!=''">
+				and s.subCate_id = #{subCate_id}
+			</if>
+		</if>
+	</sql>
+	
+	<!-- 북테이블-카테고리테이블 조인한거 -->
+	<select id="selectByCategory" resultMap="bookMap">
+		<![CDATA[
+		select 
+			rn, bookNo, cate_id, cate_name, subCate_id, subCate_name, bookName, 
+			author, publisher, bookImage, price, regDate
+		from
+		(
+		    select 
+		        rownum as rn, b.bookNo as bookNo, c.cate_id as cate_id, c.cate_name as cate_name, 
+		        s.subCate_id as subCate_id, s.subCate_name as subCate_name, b.bookName as bookName, 
+		        b.author as author, b.publisher as publisher, b.bookImage as bookImage, b.price as price, 
+		        b.regDate as regDate
+		    from 
+		        book_table b
+		        inner join book_category c on b.cate_id = c.cate_id
+		        inner join book_subCategory s on b.subCate_id = s.subCate_id
+		    where rownum <= #{maxRow}
+		]]>
+		<include refid="condition2"/>
+		<![CDATA[
+		)
+		where rn > #{minRow}
+		]]> 
+	</select>
+	
+	<!-- 최근 등록한거 목록 -->
+	<select id="latestList" resultMap="bookMap">
+		<![CDATA[
+		select 
+			bookNo, cate_id, cate_name, subCate_id, subCate_name, bookName, 
+			author, publisher, bookImage, price, regDate
+		from
+		(
+			select
+				b.bookNo as bookNo, c.cate_id as cate_id, c.cate_name as cate_name, 
+		        s.subCate_id as subCate_id, s.subCate_name as subCate_name, b.bookName as bookName, 
+		        b.author as author, b.publisher as publisher, b.bookImage as bookImage, b.price as price, 
+		        b.regDate as regDate
+			from
+				book_table b
+			inner join book_category c on b.cate_id = c.cate_id
+			inner join book_subCategory s on b.subCate_id = s.subCate_id
+			ORDER BY b.bookNo desc	
+		)
+		where rownum <= 5
+		]]>
+	</select>
+	
+	<!-- 게시물 상세 -->
+	<select id="findByBookNo" resultMap="bookMap">
+		select * from 
+		book_table b 
+		inner join book_category c on b.cate_id = c.cate_id
+		inner join book_subCategory s on b.subCate_id = s.subCate_id
+		where b.bookNo=#{bookNo}
+	</select>
+	
+	<!-- =================================================== -->
+
+	<select id="bookList" resultType="bookVO">
+		select * from book_table 
+	</select>
+	
+	<!-- 도서 등록 여러개 -->
+	<!-- 
+	<insert id="addBook">
+		insert all
+		<foreach collection="bookList" item="con">
+			into book_table(bookNo, cate_id, subCate_id, bookName, author, publisher, price, bookImage)
+			values(bookNo_seq, #{con.cate_id}, #{con.subCate_id}, #{con.bookName}, #{con.author},
+			#{con.publisher}, #{con.price}, #{con.bookImage})
+		</foreach>
+		select * from dual
+	</insert>
+	 -->
+	
+	<!-- 도서 등록 여러개(대여, 대여료 포함) -->
+	<insert id="addBook">
+		insert all
+		<foreach collection="bookList" item="con">
+			into book_table(bookNo, cate_id, subCate_id, bookName, author, publisher, price, take, takePrice)
+			values(bookNo_seq, #{con.cate_id}, #{con.subCate_id}, #{con.bookName}, #{con.author},
+			#{con.publisher}, #{con.price}, '대여', 1000)
+		</foreach>
+		select * from dual
+	</insert>
+
+	<sql id="condition">
+		<trim prefix="and">
+			<choose>
+				<when test="type=='B'.toString()">
+					bookName like '%'||#{keyword}||'%'
+				</when>
+				<when test="type=='A'.toString()">
+					author like '%'||#{keyword}||'%'
+				</when>
+				<when test="type=='P'.toString()">
+					publisher like '%'||#{keyword}||'%'
+				</when>
+			</choose>
+		</trim>
+		<if test="cate_id!=null and cate_id!=''">
+			and cate_id = #{cate_id}
+			<if test="subCate_id!=null and subCate_id!=''">
+				and subCate_id = #{subCate_id}
+			</if>
+		</if>
+	</sql>
+	
+	<!-- 총 게시물(책) 수 -->
+	<select id="getTotalCount" resultType="int">
+		select count(*) from book_table
+		<where>
+			<include refid="condition" />
+		</where>
+	</select>
+	
+	<!-- 게시물(책) 목록 -->
+	<!-- 
+	<select id="selectByCategory" resultType="bookVO">
+		<![CDATA[
+		select 
+			rn, bookNo, cate_id, subCate_id, bookName, author, publisher, bookImage, price, regDate
+		from
+		(
+		    select 
+		        rownum as rn, bookNo, cate_id, subCate_id, bookName, author, publisher, bookImage, price, regDate
+		    from 
+		        book_table
+		    where rownum <= #{maxRow}
+		]]>
+		<include refid="condition"/>
+		<![CDATA[ 
+		) 
+		where rn > #{minRow}
+		]]> 
+	</select>
+	 -->
+	
+	<!-- 게시물 상세 -->
+	<!-- 
+	<select id="findByBookNo" resultType="bookVO">
+		select * from book_table
+		where bookNo=#{bookNo}
+	</select>
+ 	-->
+ 	<!-- 카테고리별 게시물(책) 수 -->
+	<select id="bookOfCate" resultMap="testMap">
+		select 
+			c.cate_id as cate_id, c.cate_name as cate_name, count(b.cate_id) as count
+		from 
+			book_category c LEFT OUTER JOIN book_table b on c.cate_id = b.cate_id 
+		group by c.cate_id, c.cate_name
+	</select>
+	
+	<!-- 카테고리별 게시물(책) 수 -->
+	<select id="bookOfSubCate" resultMap="testMap">
+		select 
+			s.cate_id as cate_id, s.subCate_id as subCate_id, s.subCate_name as subCate_name, count(b.subCate_id) as count 
+		from 
+			book_subCategory s LEFT OUTER JOIN book_table b on s.subCate_id = b.subCate_id 
+		group by s.cate_id, s.subCate_id, s.subCate_name
+	</select>
+	
+	<resultMap id="testMap" type="HashMap">
+		<result property="cate_id" column="cate_id" />
+		<result property="cate_name" column="cate_name" />
+		<result property="subCate_id" column="subCate_id" />
+		<result property="subCate_name" column="subCate_name" />
+		<result property="count" column="count" />
+	</resultMap>
+	
+	<!-- 도서상품 등록 -->
+	<!-- 
+	<insert id="insertBook" useGeneratedKeys="true" keyColumn="bookNo" keyProperty="bookNo">
+		insert into book_table(bookNo, cate_id, subCate_id, bookName, author, publisher, price, bookImage)
+		values(bookNo_seq.NEXTVAL, #{cate_id}, #{subCate_id}, #{bookName},
+		#{author}, #{publisher},#{price}, #{bookImage, jdbcType=VARCHAR})
+	</insert>
+	 -->
+	
+	<!-- 도서상품 등록 -->
+	<insert id="insertBook" useGeneratedKeys="true" keyColumn="bookNo" keyProperty="bookNo">
+		insert into book_table(bookNo, cate_id, subCate_id, bookName, author, publisher, price, take, takePrice, bookImage)
+		values(bookNo_seq.NEXTVAL, #{cate_id}, #{subCate_id}, #{bookName},
+		#{author}, #{publisher},#{price}, '대여', 1000, #{bookImage, jdbcType=VARCHAR})
+	</insert>
+ 	
+	<!-- 도서상품 삭제 -->
+	<delete id="deleteBook">
+		delete from book_table where bookNo=#{bookNo}
+	</delete>
+	
+	<!-- 도서상품 수정 --> 
+	<update id="updateBook">
+		update 
+			book_table 
+		set 
+			cate_id=#{cate_id}, subCate_id=#{subCate_id}, bookName=#{bookName}, author=#{author}, 
+			publisher=#{publisher}, price=#{price}, bookImage=#{bookImage, jdbcType=VARCHAR}
+		where bookNo = #{bookNo}
+	</update>
+	
+	
+	<!--
+	 ===============================================대여======================================================== 
+	 -->
+	 
+	 <!-- 총 게시물(책) 수 -->
+	<select id="getTakeTotalCount" resultType="int">
+		select count(*) from book_table
+		<where>
+			<include refid="takeCondition" />
+		</where>
+	</select>
+	 
+	 
+	<sql id="takeCondition">
+		<trim prefix="and">
+			<choose>
+				<when test="type=='BN'.toString()">
+					bookName like '%'||#{keyword}||'%'
+				</when>
+				<when test="type=='AT'.toString()">
+					author like '%'||#{keyword}||'%'
+				</when>
+				<when test="type=='PS'.toString()">
+					publisher like '%'||#{keyword}||'%'
+				</when>
+				<when test="type=='TR'.toString()">
+					take like '%'||#{keyword}||'%'
+				</when>			
+			</choose>
+		</trim>	
+	</sql>
+	
+	<!-- 대여현황보기-->
+		<select id="getTakeList" resultType="bookVO">
+		<![CDATA[
+		select 
+			rn, bookNo, cate_id, bookName, author, publisher, take, takePrice, takeDate, returnDate,reason
+		from
+		(
+		    select 
+		        rownum as rn, bookNo, cate_id, bookName, author, publisher, take, takePrice, takeDate, returnDate, reason
+		    from 
+		        book_table
+		    where rownum <= #{maxRow} 
+		]]>
+		<include refid="takeCondition"/>
+		<![CDATA[ 
+		) 
+		where rn > #{minRow}
+		]]> 
+	</select>
+	
+	<!-- 고객이 대여신청했을때 '신청대기'로 없데이트 -->
+	<update id="requestTake">
+		update book_table set take ='신청대기' where bookName=#{bookName}
+	</update>
+	
+	<!-- ===========대여 '신청대기'자만 열람(관리자 페이지) -->
+	<select id="takeMaster" resultType="BookVO">
+		<![CDATA[
+		select 
+		   rn, bookNo, cate_id, bookName, author, publisher, take, takePrice, takeDate, returnDate
+		from
+		(
+		    select 
+		       rownum as rn, bookNo, cate_id, bookName, author, publisher, take, takePrice, takeDate, returnDate
+		    from 
+		        book_table
+		    where rownum <= #{maxRow}
+		]]>
+			<include refid="takeCondition"/>
+		<![CDATA[ 
+		) 
+		where rn > #{minRow} 
+		]]> 
+	</select>
+	<!-- 대여승인 -->
+	<update id="yesUpdate">
+		update book_table set take ='대여중' where bookName=#{bookName}
+	</update>
+	<!-- 대여 거절 및 사유 -->
+	<update id="noUpdate">
+		update book_table set take ='거절',reason=#{reason} where bookName=#{bookName}
+	</update>
+</mapper>

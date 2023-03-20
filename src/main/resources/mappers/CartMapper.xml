@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jafa.repository.CartRepository">
+
+	<!-- 멤버 맵 -->
+	<resultMap type="memberDTO" id="memberMap">
+		<result property="mno" column="mno" />
+		<result property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="email" column="email" />
+	</resultMap>
+
+	<!-- 카테 맵 -->
+	<resultMap type="bookCategory" id="cateMap">
+		<result property="cate_id" column="cate_id" />
+		<result property="cate_name" column="cate_name" />
+	</resultMap>
+	<!-- 서브카테 맵 -->
+	<resultMap type="bookSubCategory" id="sub_cateMap">
+		<result property="cate_id" column="cate_id" />
+		<result property="subCate_id" column="subCate_id" />
+		<result property="subCate_name" column="subCate_name" />
+	</resultMap>
+	
+	<!-- 북 맵 -->
+	<resultMap type="bookVO" id="bookMap">
+		<result property="bookNo" column="bookNo"/>
+		<result property="bookName" column="bookName"/>
+		<result property="author" column="author"/>
+		<result property="publisher" column="publisher"/>
+		<result property="bookImage" column="bookImage"/>
+		<result property="price" column="price"/>
+		<result property="regDate" column="regDate"/>
+		<collection property="bookCategory" resultMap="cateMap"/>
+		<collection property="bookSubCategory" resultMap="sub_cateMap"/>
+	</resultMap>
+
+	<!-- 카트 맵 -->
+	<resultMap type="cartVO" id="cartMap">
+		<result property="cartNo" column="cartNo"/>
+		<result property="amount" column="amount"/>
+		<collection property="memberDTO" resultMap="memberMap"/>
+		<collection property="bookVO" resultMap="bookMap"/>
+	</resultMap>
+	
+	<!-- 회원아이디로 장바구니 조회 -->
+	<select id="findById" resultMap="cartMap">
+		select 
+			rn, id, name, email, cartNo, bookNo, bookImage, bookName, price, amount, 
+			cate_id, cate_name, subCate_id, subCate_name
+		from 
+		(
+			select
+				rownum as rn, m.id as id, m.name as name, m.email as email, c.cartNo as cartNo, b.bookNo as bookNo, b.bookImage as bookImage, 
+				b.bookName as bookName, b.price as price, c.amount as amount, q.cate_id as cate_id, 
+				q.cate_name as cate_name, w.subCate_id as subCate_id, w.subCate_name as subCate_name
+			from
+				cart_table c 
+				inner join book_table b on c.bookNo = b.bookNo
+				inner join book_category q on q.cate_id = b.cate_id
+				inner join book_subCategory w on w.subCate_id = b.subCate_id
+				inner join mem_tbl m on c.id = m.id
+		)
+		where id=#{id}
+	</select>  
+
+	<!-- 장바구니 담기 -->
+	<insert id="addCart" useGeneratedKeys="true" keyColumn="cartNo" keyProperty="cartNo">
+		INSERT INTO cart_table(cartNo, id, bookNo, amount) 
+		VALUES(cartNo_seq.NEXTVAL,#{id},#{bookNo}, #{amount})
+	</insert>
+	
+	<!-- 장바구니 상품 삭제 -->
+	<delete id="delCart">
+		delete from cart_table 
+		where cartNo = #{cartNo}
+	</delete>
+	
+	<!-- 도서상품 수정 --> 
+	<update id="updateCart">
+		update cart_table set amount=#{amount} 
+		where cartNo = #{cartNo}
+	</update>
+	
+	<!-- 장바구니에 담긴 상품 갯수 -->
+	<select id="getCount" resultType="int">
+		select count(*) from cart_table where id=#{id}
+	</select>
+  
+</mapper>
